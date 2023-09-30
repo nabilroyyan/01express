@@ -6,7 +6,7 @@ const { body, validationResult } = require("express-validator");
 const connection = require("../config/db");
 router.get("/", function (req, res) {
   connection.query(
-    "select * from mahasiswa order by id_m desc",
+    "SELECT a.nama, b.nama_jurusan AS jurusan FROM mahasiswa a JOIN jurusan b ON b.id_j = a.id_jurusan ORDER BY a.id_m DESC",
     function (err, rows) {
       if (err) {
         return res.status(500).json({
@@ -30,6 +30,7 @@ router.post(
     //validation
     body("nama").notEmpty(),
     body("nrp").notEmpty(),
+    body("nama_jurusan").notEmpty(),
   ],
   (req, res) => {
     const error = validationResult(req);
@@ -41,6 +42,7 @@ router.post(
     let data = {
       nama: req.body.nama,
       nrp: req.body.nrp,
+      nama_jurusan: req.body.nama_jurusan,
     };
     connection.query("insert into mahasiswa set ?", data, function (err, rows) {
       if (err) {
@@ -59,7 +61,7 @@ router.post(
   }
 );
 
-router.get("/(:id)", function (req, res) {
+router.get("/:id", function (req, res) {
   let id = req.params.id;
   connection.query(
     `select * from mahasiswa where id_m = ${id}`,
@@ -88,7 +90,11 @@ router.get("/(:id)", function (req, res) {
 
 router.patch(
   "/update/:id",
-  [body("nama").notEmpty(), body("nrp").notEmpty()],
+  [
+    body("nama").notEmpty(),
+    body("nrp").notEmpty(),
+    body("nama_jurusan").notEmpty(),
+  ],
   (req, res) => {
     const error = validationResult(req);
     if (!error.isEmpty()) {
@@ -100,6 +106,7 @@ router.patch(
     let data = {
       nama: req.body.nama,
       nrp: req.body.nrp,
+      nama_jurusan: req.body.nama_jurusan,
     };
     connection.query(
       `update mahasiswa set ? where id_m = ${id}`,
@@ -120,5 +127,25 @@ router.patch(
     );
   }
 );
+
+router.delete("/delete/:id", function (req, res) {
+  let id = req.params.id;
+  connection.query(
+    `delete from mahasiswa where id_m = ${id} `,
+    function (err, rows) {
+      if (err) {
+        return res.status(500).json({
+          status: false,
+          massage: "server eror",
+        });
+      } else {
+        return res.status(200).json({
+          status: true,
+          massage: "delete berhasil",
+        });
+      }
+    }
+  );
+});
 
 module.exports = router;
