@@ -179,22 +179,53 @@ router.patch(
   }
 );
 
-router.delete("/delete/:id", function (req, res) {
-  let id = req.params.id;
+
+router.delete("/delete/(:id)", function (req, res) {
+  const id = req.params.id;
+
   connection.query(
-    `delete from mahasiswa where id_m = ${id} `,
+    `SELECT * FROM mahasiswa WHERE id_m = ${id}`,
     function (err, rows) {
       if (err) {
         return res.status(500).json({
           status: false,
-          massage: "server eror",
-        });
-      } else {
-        return res.status(200).json({
-          status: true,
-          massage: "delete berhasil",
+          message: "Server Error",
         });
       }
+      if (rows.length === 0) {
+        return res.status(404).json({
+          status: false,
+          message: "Not Found",
+        });
+      }
+
+      const namaFileLama = rows[0].gambar;
+
+      if (namaFileLama) {
+        const pathFileLama = path.join(
+          __dirname,
+          "../public/images",
+          namaFileLama
+        );
+        fs.unlinkSync(pathFileLama);
+      }
+
+      connection.query(
+        `delete from mahasiswa where id_m = ${id}`,
+        function (err, result) {
+          if (err) {
+            return res.status(500).json({
+              status: false,
+              message: "Server Error",
+            });
+          } else {
+            return res.status(200).json({
+              status: true,
+              message: "Deleted Sukses..!",
+            });
+          }
+        }
+      );
     }
   );
 });
