@@ -1,12 +1,10 @@
 const express = require("express");
 const router = express.Router();
-
+const connection = require("../config/db");
 const { body, validationResult } = require("express-validator");
 const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
-
-const connection = require("../config/db");
 
 const storage = multer.diskStorage({
   destination: (reg, file, cb) => {
@@ -17,7 +15,17 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + path.extname(file.originalname));
   },
 });
-const upload = multer({ storage: storage });
+
+//filter ga,bar jpg/png
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
+    cb(null, true); //izinkan file
+  } else {
+    cb(new Error("jenis file salah"), false);
+  }
+};
+
+const upload = multer({ storage: storage, fileFilter: fileFilter });
 
 router.get("/", function (req, res) {
   connection.query(
@@ -178,7 +186,6 @@ router.patch(
     );
   }
 );
-
 
 router.delete("/delete/(:id)", function (req, res) {
   const id = req.params.id;
