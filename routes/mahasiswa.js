@@ -2,8 +2,22 @@ const express = require("express");
 const router = express.Router();
 
 const { body, validationResult } = require("express-validator");
+const multer = require("multer");
+const path = require("path");
 
 const connection = require("../config/db");
+
+const storage = multer.diskStorage({
+  destination: (reg, file, cb) => {
+    cb(null, "public/images");
+  },
+  filename: (reg, file, cb) => {
+    console.log(file);
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+const upload = multer({ storage: storage });
+
 router.get("/", function (req, res) {
   connection.query(
     "SELECT a.nama, b.nama_jurusan AS jurusan FROM mahasiswa a JOIN jurusan b ON b.id_j = a.id_jurusan ORDER BY a.id_m DESC",
@@ -26,11 +40,12 @@ router.get("/", function (req, res) {
 
 router.post(
   "/store",
+  upload.single("gambar"),
   [
     //validation
     body("nama").notEmpty(),
     body("nrp").notEmpty(),
-    body("nama_jurusan").notEmpty(),
+    body("id_jurusan").notEmpty(),
   ],
   (req, res) => {
     const error = validationResult(req);
@@ -42,19 +57,22 @@ router.post(
     let data = {
       nama: req.body.nama,
       nrp: req.body.nrp,
-      nama_jurusan: req.body.nama_jurusan,
+      id_jurusan: req.body.id_jurusan,
+      gambar: req.file.filename,
     };
     connection.query("insert into mahasiswa set ?", data, function (err, rows) {
       if (err) {
         return res.status(500).json({
           status: false,
           massage: "server eror",
+          error: error.array(),
         });
       } else {
         return res.status(201).json({
           status: true,
           massage: "succes",
           data: rows[0],
+          error: error.array(),
         });
       }
     });
