@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const { body, validationResult } = require("express-validator");
+const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
 
@@ -108,10 +109,11 @@ router.get("/:id", function (req, res) {
 
 router.patch(
   "/update/:id",
+  upload.single("gambar"),
   [
     body("nama").notEmpty(),
     body("nrp").notEmpty(),
-    body("nama_jurusan").notEmpty(),
+    body("id_jurusan").notEmpty(),
   ],
   (req, res) => {
     const error = validationResult(req);
@@ -121,26 +123,57 @@ router.patch(
       });
     }
     let id = req.params.id;
-    let data = {
-      nama: req.body.nama,
-      nrp: req.body.nrp,
-      nama_jurusan: req.body.nama_jurusan,
-    };
+    let gambar = req.file ? req.file.filename : null; //pengecekan apakah gambar ada file yang di unggah
+
     connection.query(
-      `update mahasiswa set ? where id_m = ${id}`,
-      data,
+      `select * from Mahasiswa where id_m = ${id}`,
       function (err, rows) {
         if (err) {
           return res.status(500).json({
             status: false,
             massage: "server eror",
           });
-        } else {
+        }
+        if (rows.length === 0) {
           return res.status(200).json({
             status: true,
-            massage: "update berhasil",
+            massage: "not found",
           });
         }
+        const namafilelama = rows[0].gambar;
+
+        //hapus file lama juka ada
+        if (namafilelama && gambar) {
+          const pathFilelama = path.join(
+            __dirname,
+            "../public/images",
+            namafilelama
+          );
+          fs.unlinkSync(pathFilelama);
+        }
+
+        let data = {
+          nama: req.body.nama,
+          nrp: req.body.nrp,
+          id_jurusan: req.body.id_jurusan,
+        };
+        connection.query(
+          `update mahasiswa set ? where id_m = ${id}`,
+          data,
+          function (err, rows) {
+            if (err) {
+              return res.status(500).json({
+                status: false,
+                massage: "server eror",
+              });
+            } else {
+              return res.status(200).json({
+                status: true,
+                massage: "update berhasil",
+              });
+            }
+          }
+        );
       }
     );
   }
