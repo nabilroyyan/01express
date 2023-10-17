@@ -29,7 +29,7 @@ const upload = multer({ storage: storage, fileFilter: fileFilter });
 
 router.get("/", function (req, res) {
   connection.query(
-    "SELECT a.nama, b.nama_jurusan AS jurusan FROM mahasiswa a JOIN jurusan b ON b.id_j = a.id_jurusan ORDER BY a.id_m DESC",
+    "SELECT a.nama, a.gambar, a.swa_foto, b.nama_jurusan AS jurusan FROM mahasiswa a JOIN jurusan b ON b.id_j = a.id_jurusan ORDER BY a.id_m DESC",
     function (err, rows) {
       if (err) {
         return res.status(500).json({
