@@ -141,7 +141,9 @@ router.patch(
     const id = req.params.id;
 
     const gambar = req.files["gambar"] ? req.files["gambar"][0].filename : null;
-    const swa_foto = req.files["swa_foto"] ? req.files["swa_foto"][0].filename: null;
+    const swa_foto = req.files["swa_foto"]
+      ? req.files["swa_foto"][0].filename
+      : null;
 
     connection.query(
       `SELECT * FROM mahasiswa WHERE id_m = ${id}`,
@@ -209,11 +211,11 @@ router.patch(
   }
 );
 
-router.delete("/delete/(:id)", function (req, res) {
-  const id = req.params.id;
+router.delete("/delete/:id_m", function (req, res) {
+  const id_m = req.params.id_m;
 
   connection.query(
-    `SELECT * FROM mahasiswa WHERE id_m = ${id}`,
+    `SELECT * FROM mahasiswa WHERE id_m = ${id_m}`,
     function (err, rows) {
       if (err) {
         return res.status(500).json({
@@ -228,19 +230,27 @@ router.delete("/delete/(:id)", function (req, res) {
         });
       }
 
-      const namaFileLama = rows[0].gambar;
-
-      if (namaFileLama) {
-        const pathFileLama = path.join(
+      const gambarLama = rows[0].gambar;
+      const swa_fotoLama = rows[0].swa_foto;
+      // Hapus file lama jika ada
+      if (gambarLama) {
+        const pathfileLama = path.join(
           __dirname,
           "../public/images",
-          namaFileLama
+          gambarLama
         );
-        fs.unlinkSync(pathFileLama);
+        fs.unlinkSync(pathfileLama);
       }
-
+      if (swa_fotoLama) {
+        const pathfileLama = path.join(
+          __dirname,
+          "../public/images",
+          swa_fotoLama
+        );
+        fs.unlinkSync(pathfileLama);
+      }
       connection.query(
-        `delete from mahasiswa where id_m = ${id}`,
+        `delete from mahasiswa where id_m = ${id_m}`,
         function (err, result) {
           if (err) {
             return res.status(500).json({
