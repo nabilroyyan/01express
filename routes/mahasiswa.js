@@ -49,7 +49,10 @@ router.get("/", function (req, res) {
 
 router.post(
   "/store",
-  upload.single("gambar"),
+  upload.fields([
+    { name: "gambar", maxCount: 1 },
+    { name: "swa_foto", maxCount: 1 },
+  ]),
   [
     //validation
     body("nama").notEmpty(),
@@ -67,7 +70,8 @@ router.post(
       nama: req.body.nama,
       nrp: req.body.nrp,
       id_jurusan: req.body.id_jurusan,
-      gambar: req.file.filename,
+      gambar: req.files.gambar[0].filename,
+      swa_foto: req.files.swa_foto[0].filename,
     };
     connection.query("insert into mahasiswa set ?", data, function (err, rows) {
       if (err) {
@@ -117,67 +121,85 @@ router.get("/:id", function (req, res) {
 
 router.patch(
   "/update/:id",
-  upload.single("gambar"),
+  upload.fields([
+    { name: "gambar", maxCount: 1 },
+    { name: "swa_foto", maxCount: 1 },
+  ]),
   [
     body("nama").notEmpty(),
     body("nrp").notEmpty(),
     body("id_jurusan").notEmpty(),
   ],
   (req, res) => {
-    const error = validationResult(req);
-    if (!error.isEmpty()) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
       return res.status(422).json({
-        error: error.array(),
+        errors: errors.array(),
       });
     }
-    let id = req.params.id;
-    let gambar = req.file ? req.file.filename : null; //pengecekan apakah gambar ada file yang di unggah
+
+    const id = req.params.id;
+
+    const gambar = req.files["gambar"] ? req.files["gambar"][0].filename : null;
+    const swa_foto = req.files["swa_foto"] ? req.files["swa_foto"][0].filename: null;
 
     connection.query(
-      `select * from Mahasiswa where id_m = ${id}`,
+      `SELECT * FROM mahasiswa WHERE id_m = ${id}`,
       function (err, rows) {
         if (err) {
           return res.status(500).json({
             status: false,
-            massage: "server eror",
+            message: "Server Error",
           });
         }
         if (rows.length === 0) {
-          return res.status(200).json({
-            status: true,
-            massage: "not found",
+          return res.status(404).json({
+            status: false,
+            message: "Not Found",
           });
         }
-        const namafilelama = rows[0].gambar;
 
-        //hapus file lama juka ada
-        if (namafilelama && gambar) {
-          const pathFilelama = path.join(
+        const gambarLama = rows[0].gambar;
+        const swa_fotoLama = rows[0].swa_foto;
+
+        if (gambarLama && gambar) {
+          const pathGambar = path.join(
             __dirname,
             "../public/images",
-            namafilelama
+            gambarLama
           );
-          fs.unlinkSync(pathFilelama);
+          fs.unlinkSync(pathGambar);
+        }
+        if (swa_fotoLama && gambar) {
+          const pathSwa = path.join(
+            __dirname,
+            "../public/images",
+            swa_fotoLama
+          );
+          fs.unlinkSync(pathSwa);
         }
 
-        let data = {
+        let Data = {
           nama: req.body.nama,
           nrp: req.body.nrp,
           id_jurusan: req.body.id_jurusan,
+          gambar: gambar,
+          swa_foto: swa_foto,
         };
+
         connection.query(
-          `update mahasiswa set ? where id_m = ${id}`,
-          data,
-          function (err, rows) {
+          `UPDATE mahasiswa SET ? WHERE id_m = ${id}`,
+          Data,
+          function (err, result) {
             if (err) {
               return res.status(500).json({
                 status: false,
-                massage: "server eror",
+                message: "Server Error",
               });
             } else {
               return res.status(200).json({
                 status: true,
-                massage: "update berhasil",
+                message: "Update Sukses..!",
               });
             }
           }
